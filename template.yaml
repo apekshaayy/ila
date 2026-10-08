@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: ILA event-driven content moderation pipeline
+
+Parameters:
+  OllamaUrl:
+    Type: String
+    Default: https://ollama.com/api/chat
+  OllamaModel:
+    Type: String
+    Default: llama3.1:8b
+  OllamaSecretName:
+    Type: String
+    Default: ila/ollama_api_key
+    Description: Name of an existing Secrets Manager secret containing a plain key or api_key JSON field.
+  MaxChars:
+    Type: Number
+    Default: 8000
+    MinValue: 1
+  ConfidenceThreshold:
+    Type: Number
+    Default: 0.70
+    MinValue: 0
+    MaxValue: 1
+  AllowedFrontendOrigin:
+    Type: String
+    Default: http://localhost:5173
+    Description: Exact browser origin allowed to call the HTTP API.
+
+Resources:
+  ModerationApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedFrontendOrigin
+        AllowHeaders:
+          - Content-Type
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        MaxAge: 600
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ModerationEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub ${AWS::StackName}-moderation
+
+  AnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda-functions/analysis-lambda/
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Architectures: [x86_64]
+      MemorySize: 256
+      Timeout: 30
+      Environment:
+        Variables:
+          OLLAMA_URL: !Ref OllamaUrl
+          OLLAMA_MODEL: !Ref OllamaModel
+          OLLAMA_SECRET_NAME: !Ref OllamaSecretName
+          EVENT_BUS_NAME: !Ref ModerationEventBus
+          MAX_CHARS: !Ref MaxChars
+          CONFIDENCE_THRESHOLD: !Ref ConfidenceThreshold
+          OLLAMA_TIMEOUT_SECONDS: 15
+          LOG_LEVEL: INFO
+          OLLAMA_AUTH_MODE: secrets_manager
+          API_ALLOWED_ORIGIN: !Ref AllowedFrontendOrigin
+          PUBLISH_HTTP_EVENTS: "true"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - S3ReadPolicy:
+            BucketName: !Ref ContentBucket
+        - Statement:
+            - Sid: ReadOnlyConfiguredOllamaSecret
+              Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OllamaSecretName}*
+            - Sid: PublishOnlyToModerationBus
+              Effect: Allow
+              Action: events:PutEvents
+              Resource: !GetAtt ModerationEventBus.Arn
+      Events:
+        ModerateApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ModerationApi
+            Path: /api/moderate
+            Method: POST
+        HealthApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ModerationApi
+            Path: /api/health
+            Method: GET
+        TextUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref ContentBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .txt
+        JsonUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref ContentBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .json
+        CsvUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref ContentBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .csv
+
+Outputs:
+  ApiBaseUrl:
+    Description: Base URL used by the frontend VITE_API_BASE_URL setting.
+    Value: !Sub https://${ModerationApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  ContentBucketName:
+    Description: Upload .txt files here to invoke moderation.
+    Value: !Ref ContentBucket
+  ModerationEventBusName:
+    Value: !Ref ModerationEventBus
+  AnalysisFunctionName:
+    Value: !Ref AnalysisFunction

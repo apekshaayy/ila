@@ -1,0 +1,2 @@
+# boto3 is provided by AWS Lambda, but is declared for local execution and reproducible builds.
+boto3>=1.34,<2

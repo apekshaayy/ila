@@ -1,0 +1,12 @@
+[
+  {"name": "safe", "text": "The community garden opens at nine tomorrow."},
+  {"name": "spam", "text": "You won a prize; send your password to claim it."},
+  {"name": "misinformation", "text": "A fabricated public-health claim presented as verified fact."},
+  {"name": "harassment", "text": "A targeted message repeatedly humiliating a classmate."},
+  {"name": "hate", "text": "A dehumanizing attack aimed at a protected group."},
+  {"name": "violence", "text": "A direct threat to physically hurt a named person."},
+  {"name": "sexual_content", "text": "A deliberately non-graphic placeholder for explicit adult content."},
+  {"name": "ambiguous_satire", "text": "A satirical headline that could be mistaken for a factual claim."},
+  {"name": "self_harm", "text": "A non-graphic message encouraging someone to injure themselves."},
+  {"name": "animal_abuse", "text": "A non-graphic message celebrating cruelty toward an animal."}
+]

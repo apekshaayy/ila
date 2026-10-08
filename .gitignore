@@ -1,2 +1,31 @@
-secret.json request.json 
-*.zip .env __pycache__/ .aws/ 
+# Local secrets and AWS credentials
+.env
+.env.*
+!.env.example
+secret.json
+request.json
+.aws/
+credentials
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+
+# Build and deployment output
+*.zip
+.aws-sam/
+samconfig.toml
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

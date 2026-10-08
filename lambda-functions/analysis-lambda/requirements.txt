@@ -1,0 +1,1 @@
+# AWS Lambda Python runtimes include boto3; the function otherwise uses the standard library.
