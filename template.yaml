@@ -65,7 +65,7 @@ Resources:
     Properties:
       CodeUri: lambda-functions/analysis-lambda/
       Handler: index.lambda_handler
-      Runtime: python3.12
+      Runtime: python3.13
       Architectures: [x86_64]
       MemorySize: 256
       Timeout: 30
