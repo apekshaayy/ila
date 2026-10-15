@@ -126,7 +126,7 @@ ila/
 | Variable | Default | Purpose |
 |---|---:|---|
 | `OLLAMA_URL` | `https://ollama.com/api/chat` | Reachable Ollama chat endpoint; AWS Lambda cannot use your laptop's `localhost`. |
-| `OLLAMA_MODEL` | `llama3.1:8b` | Model sent to Ollama. |
+| `OLLAMA_MODEL` | `gemma4:31b-cloud` | Model sent to Ollama. |
 | `OLLAMA_AUTH_MODE` | `secrets_manager` | `secrets_manager` in AWS; local adapter defaults to `none`. `environment` is local-only. |
 | `OLLAMA_SECRET_NAME` | `ila/ollama_api_key` | Existing Secrets Manager secret name. |
 | `OLLAMA_API_KEY` | empty | Local `environment` auth or CLI script only; never expose it to the frontend. |
@@ -191,7 +191,7 @@ cd D:\ila
 python scripts\dev_api.py
 ```
 
-The adapter listens on `http://127.0.0.1:8787`, uses the production Lambda handler, defaults to unauthenticated local Ollama at `http://localhost:11434/api/chat`, and disables EventBridge publishing.
+The adapter listens on `http://127.0.0.1:8787`, uses the production Lambda handler, defaults to unauthenticated local Ollama at `http://localhost:11434/api/chat`.
 
 ## Run Frontend
 
@@ -327,3 +327,4 @@ For production, also configure identity/authentication, rate limiting, WAF as ap
 - The health endpoint reports configuration and the last model observation for a warm Lambda instance, not a synthetic Ollama probe.
 - Browser history is deliberately tab-scoped and is not durable or shared across devices.
 - The SAM CLI was not available in the development environment used for this implementation, so SAM deployment commands are documented but were not executed here.
+- Not yet scaled to the full extent of Content Moderation by humans and Emulation Moderation by AI Agents
